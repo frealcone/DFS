@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+package pb;
+
+option go_package = "./pb";
+
+// Entry is the basic infomation of a chunk replica of a particular file stored 
+// in the distributed file system.
+message Entry {
+    // name of the chunk
+    string chunkName = 1;
+    // IP address of the chunk server storing this chunk replica
+    string chunkServer = 2;
+    int32 version = 3;      // the version of this chunk replica
+}
+
+// EntryReq tells the master server which file to read from and offset to start
+// reading this file.
+message EntryReq {
+    string filename = 1;
+    uint64 offset = 2;
+}
+
+// EntryResp returns the basic infomation of the chunk specified by EntryReq.
+message EntryResp {
+    repeated Entry entries = 1;
+}
+
+
+// CreateReq specifies the name of file being created.
+message CreateReq {
+    string filename = 1;
+}
+
+message CreateResp {}
+
+
+// WriteReq includes data to be append to specified chunk.
+message WriteReq {
+    string filename = 1;
+    bytes data = 2;
+    uint64 dataSize = 3;
+}
+
+enum WriteStatus {
+    SUCCESS = 0;
+    PARTIAL_FAILURE = 1;
+    FAILURE = 2;
+}
+
+message WriteResp {
+    WriteStatus result = 1;
+}
+
+// RegisterReq is the basic infomation of a chunk server.
+message RegisterReq {
+    string address = 1;
+    int32 port = 2;
+    uint32 weight = 3; // weight shows how often this chunk server whats to be requested
+}
+
+// RegisterResp contains IP addresses of other chunk servers that exist in the registry.
+message RegisterResp {
+    repeated string addresses = 1;
+}
+
+service Master {
+    // Discover returns all chunk servers storing the replica of the specified chunk.
+    rpc Discover(stream EntryReq) returns (stream EntryResp);
+    // Create creates a new file.
+    rpc Create(CreateReq) returns (CreateResp);
+    // Write appends more data to the end of specified file.
+    rpc Write(WriteReq) returns (WriteResp);
+    // Register puts one more chunk server into registry.
+    rpc Register(RegisterReq) returns (RegisterResp);
+}

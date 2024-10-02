@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package pb;
+
+option go_package = "./pb";
+
+message ReadReq {
+    string chunkName = 1;
+    uint64 offset = 2;
+}
+
+message ReadResp {
+    bytes data = 1;
+    uint64 dataSize = 2;
+}
+
+
+// PrimaryWriteReq contains data master server got from client.
+message PrimaryWriteReq {
+    string chunkName = 1;
+    bytes data = 2;
+    uint64 dataSize = 3;
+}
+
+message PrimaryWriteResp {
+    uint64 n = 1; // size of data primary chunk server has written to disk
+}
+
+
+// SyncReq asks current chunk server to synchronize with primary.
+message SyncReq {
+    string chunkName = 1;
+    uint64 offset = 2;
+    string primary = 3; // IP address of primary
+}
+
+message SyncResp {
+    uint64 n = 1; // size of data current chunk server has written to disk
+}
+
+service Chunk {
+    rpc Read(ReadReq) returns (ReadResp);
+    rpc PrimaryWrite(PrimaryWriteReq) returns (PrimaryWriteResp);
+    rpc Sync(SyncReq) returns (SyncResp);
+}
